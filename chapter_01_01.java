@@ -1,4 +1,4 @@
-public class chapter_01 {
+public class chapter_01_01 {
     //Добро пожаловать в русскую версию учебника «100-Year QA-textbook»!
 
     //С чего начнём обучение
