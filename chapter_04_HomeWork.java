@@ -10,11 +10,12 @@ public class chapter_04_HomeWork {
     //Для последнего заказа покажите customer's name, product name и employee's name.
     //Используйте JOIN нескольких таблиц.
 
-    //SELECT MAX (Orders.OrderDate), Customers.CustomerName, Product.ProductName, Employees.FirstName, Employees.LastName FROM  Orders
-    //JOIN Customers
-    //ON Orders.CustomerID = Customers.CustomerID
-    //JOIN Products
-    //ON Orders.ProductsID = Products.ProductsID;
-    //JOIN Employees
-    //ON Orders.EmployeesID = Employees.EmployeesID
+    //SELECT Customers.CustomerName, Products.ProductName, Employees.LastName
+    //FROM Orders
+    //JOIN Customers ON Orders.CustomerID = Customers.CustomerID
+    //JOIN OrderDetails ON Orders.OrderID = OrderDetails.OrderID
+    //JOIN Products ON OrderDetails.ProductID = Products.ProductID
+    //JOIN Employees ON Orders.EmployeeID = Employees.EmployeeID
+    //ORDER BY Orders.OrderID DESC
+    //LIMIT 1;
 }
