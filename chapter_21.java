@@ -591,6 +591,235 @@ public class chapter_21 {
     //Ситуация: при вводе учётных данных в приложении фронтенда снова ничего не происходит с теми же симптомами.
     //Давайте вспомним предыдущий набор предположений и снова начнём проверять их:
 
+    //1. Фронтенд работает некорректно.
+    //2. В настройках фронтенда содержится неверный адрес и (или) порт бэкенда.
+    //3. Приложение бэкенда не работает.
+    //4. Приложение бэкенда недоступно со стороны фронтенда.
+    //5. Приложение бэкенда работает некорректно.
+    //6. В БД нет нужных данных.
+
+    //1. Фронтенд работает некорректно.
+    //2. В настройках фронтенда содержится неверный адрес и (или) порт бэкенда.
+    //3. Приложение бэкенда не работает
+    //4. Приложение бэкенда недоступно со стороны фронтенда
+
+    //Давайте войдём в систему соответствующего сервера посредством SSH и
+    //запустим команду для чтения журнала в реальном времени (см. опцию -f),
+    //а затем попытаемся ввести учётные данные в приложении фронтенда, используя веб-браузер.
+
+    //[st00@c7-sandbox ~]$ journalctl -f -u nodejs-auth.st00
+    //[ ... skipped lines ... ]
+    //Feb 22 01:26:28 c7-sandbox npm[29513]: Cookies:  [Object: null prototype] {}
+    //Feb 22 01:26:28 c7-sandbox npm[29513]: { login: 'test', password: '9999' }
+
+    //Какое-то время новых строк не появляется, но затем выходят новые сообщения:
+    //Feb 22 01:26:58 c7-sandbox npm[29513]: (node:29531) UnhandledPromiseRejectionWarning: Error: Request failed with status code 500
+    //Feb 22 01:26:58 c7-sandbox npm[29513]: at createError (/apps/nodejs/st00/node_modules/axios/lib/core/createError.js:16:15)
+    //Feb 22 01:26:58 c7-sandbox npm[29513]: at settle (/apps/nodejs/st00/node_modules/axios/lib/core/settle.js:17:12)
+    //Feb 22 01:26:58 c7-sandbox npm[29513]: at IncomingMessage.handleStreamEnd (/apps/nodejs/st00/node_modules/axios/lib/adapters/http.js:260:11)
+    //Feb 22 01:26:58 c7-sandbox npm[29513]: at IncomingMessage.emit (events.js:412:35)
+    //Feb 22 01:26:58 c7-sandbox npm[29513]: at endReadableNT (internal/streams/readable.js:1333:12)
+    //Feb 22 01:26:58 c7-sandbox npm[29513]: at processTicksAndRejections (internal/process/task_queues.js:82:21)
+    //Feb 22 01:26:58 c7-sandbox npm[29513]: (node:29531) UnhandledPromiseRejectionWarning: Unhandled promise rejection. This error originated either by throwing inside of an async function without a catch block, or by rejecting a promise which was not handled with .catch(). To terminate the node process on unhandled promise rejection, use the CLI flag `--unhandled-rejections=strict` (see https://nodejs.org/api/cli.html#cli_unhandled_rejections_mode). (rejection id: 57)
+
+    //Эти сообщения ничего не проясняют кроме одной ошибки:
+    //Error: Request failed with status code 500
+    //(Ошибка: запрос не выполнен с кодом состояния 500). Это может указывать на то, что бэкенд запущен, но работает некорректно.
+
+    //Если это так, значит, в настройках фронтенда используются верные IP-адрес и порт бэкенда.
+
+    //Поэтому мы на время отбросим предположения 2, 3 и 4.
 
 
+    //5. Приложение бэкенда работает некорректно
+
+    //Давайте подключимся к серверу бэкенда посредством протокола SSH и откроем соответствующие журналы службы:
+
+    //[st00@c7-backend st00]$ journalctl -e -u java-auth.st00 | egrep -v ': at ' | less
+    //[ ... skipped lines ... ]
+    //Feb 22 01:26:35 c7-backend java-start-auth.sh[31414]: 2023-02-22 01:26:35.473  WARN 31415 --- [nio-7000-exec-3] com.zaxxer.hikari.pool.PoolBase          : HikariPool-1 - Failed to validate connection com.mysql.cj.jdbc.ConnectionImpl@fd03e33 (No operations allowed after connection closed.). Possibly consider using a shorter maxLifetime value.
+    //Feb 22 01:26:40 c7-backend java-start-auth.sh[31414]: 2023-02-22 01:26:40.487  WARN 31415 --- [nio-7000-exec-3] com.zaxxer.hikari.pool.PoolBase          : HikariPool-1 - Failed to validate connection com.mysql.cj.jdbc.ConnectionImpl@3a13530f (No operations allowed after connection closed.). Possibly consider using a shorter maxLifetime value.
+    //Feb 22 01:26:45 c7-backend java-start-auth.sh[31414]: 2023-02-22 01:26:45.496  WARN 31415 --- [nio-7000-exec-3] com.zaxxer.hikari.pool.PoolBase          : HikariPool-1 - Failed to validate connection com.mysql.cj.jdbc.ConnectionImpl@6155de36 (No operations allowed after connection closed.). Possibly consider using a shorter maxLifetime value.
+    //Feb 22 01:26:50 c7-backend java-start-auth.sh[31414]: 2023-02-22 01:26:50.506  WARN 31415 --- [nio-7000-exec-3] com.zaxxer.hikari.pool.PoolBase          : HikariPool-1 - Failed to validate connection com.mysql.cj.jdbc.ConnectionImpl@55300dc8 (No operations allowed after connection closed.). Possibly consider using a shorter maxLifetime value.
+    //Feb 22 01:26:55 c7-backend java-start-auth.sh[31414]: 2023-02-22 01:26:55.517  WARN 31415 --- [nio-7000-exec-3] com.zaxxer.hikari.pool.PoolBase          : HikariPool-1 - Failed to validate connection com.mysql.cj.jdbc.ConnectionImpl@27bebc54 (No operations allowed after connection closed.). Possibly consider using a shorter maxLifetime value.
+    //Feb 22 01:27:00 c7-backend java-start-auth.sh[31414]: 2023-02-22 01:27:00.529  WARN 31415 --- [nio-7000-exec-3] com.zaxxer.hikari.pool.PoolBase          : HikariPool-1 - Failed to validate connection com.mysql.cj.jdbc.ConnectionImpl@5a1c60d0 (No operations allowed after connection closed.). Possibly consider using a shorter maxLifetime value.
+    //Feb 22 01:27:00 c7-backend java-start-auth.sh[31414]: 2023-02-22 01:27:00.533  WARN 31415 --- [nio-7000-exec-3] o.h.engine.jdbc.spi.SqlExceptionHelper   : SQL Error: 0, SQLState: 08003
+    //Feb 22 01:27:00 c7-backend java-start-auth.sh[31414]: 2023-02-22 01:27:00.533 ERROR 31415 --- [nio-7000-exec-3] o.h.engine.jdbc.spi.SqlExceptionHelper   : HikariPool-1 - Connection is not available, request timed out after 30089ms.
+    //Feb 22 01:27:00 c7-backend java-start-auth.sh[31414]: 2023-02-22 01:27:00.533 ERROR 31415 --- [nio-7000-exec-3] o.h.engine.jdbc.spi.SqlExceptionHelper   : No operations allowed after connection closed.
+    //Feb 22 01:27:00 c7-backend java-start-auth.sh[31414]: 2023-02-22 01:27:00.599 ERROR 31415 --- [nio-7000-exec-3] o.a.c.c.C.[.[.[/].[dispatcherServlet]    : Servlet.service() for servlet [dispatcherServlet] in context with path [] threw exception [Request processing failed; nested exception is org.springframework.dao.DataAccessResourceFailureException: Unable to acquire JDBC Connection; nested exception is org.hibernate.exception.JDBCConnectionException: Unable to acquire JDBC Connection] with root cause
+    //Feb 22 01:27:00 c7-backend java-start-auth.sh[31414]: com.mysql.cj.exceptions.ConnectionIsClosedException: No operations allowed after connection closed.
+
+    //Выглядит как какая-то несуразица. Но после прочтения могут возникнуть следующие догадки:
+    //No operations allowed after connection closed
+    //(Операции не разрешены после закрытия соединения).
+    //Произошёл неизвестный на текущий момент сбой с соединением на стороне бэкенда.  Нужно выяснить, что не так.
+
+    //SQL Error: 0, SQLState: 08003
+    //(Ошибка SQL Error: 0, состояние SQL: 08003). Одновременно что-то не так с БД.
+
+    //Допустим, что само приложение бэкенда работает нормально, затем выработаем новую гипотезу и проверим ее.
+
+
+    //6. Приложение БД или сервер БД не работает
+
+    //Попробуем войти в систему БД с помощью SSH и проверим состояние службы БД. Подключение выполнено успешно, затем:
+
+    //[st00@c7-db db-dump]$ systemctl status mysqld | head -n3
+    //● mysqld.service - MySQL Server
+    //   Loaded: loaded (/usr/lib/systemd/system/mysqld.service; enabled; vendor preset: disabled)
+    //   Active: active (running) since Сб 2023-01-14 23:52:00 MSK; 1 months 7 days ago
+
+    //Со службой всё хорошо: параметр Active имеет значение active (running).
+    //Раз мы уже подключились, то давайте также проверим соответствующий порт сервера, он должен быть открытым:
+
+    //[st00@c7-db db-dump]$ netstat -ntl | egrep :3306
+    //tcp6       0      0 :::33060                :::*                    LISTEN
+    //tcp6       0      0 :::3306                 :::*                    LISTEN
+
+    //Порт TCP 3306 находится в ожидаемом состоянии (LISTEN, т. е. прослушиваемый).
+    //Поэтому теперь пришло время проверить настройки бэкенда, если это не было сделано ранее.
+
+
+    //7. В настройках бэкенда содержатся некорректные данные касательно подключения к БД
+
+    //Всегда полезно сделать две вещи: просмотреть журналы и проверить настройки. Давайте выполним второе.
+
+    //[st00@c7-backend st00]$ egrep mysql /apps/java/auth/st00/application.properties
+    //spring.datasource.url=jdbc:mysql://192.168.40.150:3306/auth_st00
+
+    //Параметры выглядят корректно и согласуются со значениями из документации продукта.
+    //Необходимы новые предположения и проверки.
+
+
+    //8. Приложение БД или весь узел БД недоступны со стороны бэкенда
+
+    //Для проверки этого предположения можно использовать следующие инструменты:
+
+    //ping: самый простой, но не всегда полезный инструмент, так как он может показать некорректные результаты,
+    //если протокол ICMP блокируется межсетевым экраном.
+
+    //traceroute: более функциональный инструмент. С его помощью, кроме всего прочего,
+    //можно проверить доступность портов и определить самый отдалённый
+    //из работающих маршрутизаторов в случае проблем с маршрутизацией.
+
+    //nc / nmap: полезны для проверки доступности портов и в этом могут полностью заменить программу ping.
+
+    //[st00@c7-backend st00]$ ping -q -c 20 192.168.40.150
+    //PING 192.168.40.150 (192.168.40.150) 56(84) bytes of data.
+    //--- 192.168.40.150 ping statistics ---
+    //20 packets transmitted, 20 received, 0% packet loss, time 19006ms
+    //rtt min/avg/max/mdev = 0.303/0.694/0.941/0.136 ms[st00@c7-backend st00]$ egrep mysql /apps/java/auth/st00/application.properties
+    //spring.datasource.url=jdbc:mysql://192.168.40.150:3306/auth_st00
+
+    //"ping" показывает, что узел доступен и потерь пакетов не наблюдается.
+    //Поэтому нам нужно проверить доступность портов удалённого сервера.
+
+    //Если у нас есть разрешение на запуск программы nmap, например, для образовательных или рабочих целей,
+    //то всегда лучше начинать с этого инструмента, поскольку он работает быстрее nc.
+    //Здесь мы используем опцию "-sT", которая (в отличие от более продвинутой опции -sS)
+    //доступна даже для простых пользователей без расширенных прав доступа.
+
+    //[st00@c7-backend ~]$ nmap -sT -p3306 192.168.40.150
+    //Starting Nmap 6.40 ( http://nmap.org ) at 2023-02-22 03:26 MSK
+    //Nmap scan report for 192.168.40.150
+    //Host is up (0.00097s latency).
+    //PORT     STATE    SERVICE
+    //3306/tcp filtered mysql
+    //Nmap done: 1 IP address (1 host up) scanned in 0.25 seconds
+
+    //Вывод nmap не обещает нам ничего хорошего, так как порт TCP 3306 показан как filtered (фильтруется),
+    //это, скорее всего, означает, что он блокируется межсетевым экраном и недоступен для нас.
+
+    //Если nmap не установлена или не разрешена в существующем окружении, то всегда остаётся вариант с программой nc.
+
+    //[st00@c7-backend st00]$ time nc -vz 192.168.40.150 3306
+    //nc: connect to 192.168.40.150 port 3306 (tcp) failed: Connection timed out
+    //real    2m7.251s
+    //user    0m0.004s
+    //sys     0m0.006s
+
+    //Здесь nc используется совместно с командой time, чтобы измерить время выполнения.
+    //Поскольку в случае чрезмерно строгих правил межсетевого экрана придётся
+    //слишком долго ждать проверки доступности одиночного порта.
+
+    //Также просто из любопытства можно одновременно с nc запустить программу tcpdump и просмотреть необработанные сетевые пакеты.
+    //Ниже показаны пакеты, собранные для похожего случая с запросом к удалённому узлу 5.255.255.242.
+
+    //Здесь мы видим только пакеты TCP SYN, исходящие от узла клиента (192.168.40.100 в этом случае).
+    //Ответов сервера не наблюдается, так как эти пакеты блокируются межсетевым экраном где-то между клиентом и сервером,
+    //и сервер просто не получает пакеты SYN клиента.
+
+    //[st00@c7-backend ~]$ tcpdump -vnn -ttt -i eth0 tcp and port 3306
+    //tcpdump: listening on eth0, link-type EN10MB (Ethernet), capture size 262144 bytes
+    // 00:00:00.000000 IP (tos 0x0, ttl 64, id 60589, offset 0, flags [DF], proto TCP (6), length 60)
+    //    192.168.40.100.42332 > 5.255.255.242.3306: Flags [S], cksum 0xef2c (incorrect -> 0xd6ea), seq 2357514415, win 29200, options [mss 1460,sackOK,TS val 3297328130 ecr 0,nop,wscale 7], length 0
+    // 00:00:01.001736 IP (tos 0x0, ttl 64, id 60590, offset 0, flags [DF], proto TCP (6), length 60)
+    //    192.168.40.100.42332 > 5.255.255.242.3306: Flags [S], cksum 0xef2c (incorrect -> 0xd300), seq 2357514415, win 29200, options [mss 1460,sackOK,TS val 3297329132 ecr 0,nop,wscale 7], length 0
+    // 00:00:02.003947 IP (tos 0x0, ttl 64, id 60591, offset 0, flags [DF], proto TCP (6), length 60)
+    //    192.168.40.100.42332 > 5.255.255.242.3306: Flags [S], cksum 0xef2c (incorrect -> 0xcb2c), seq 2357514415, win 29200, options [mss 1460,sackOK,TS val 3297331136 ecr 0,nop,wscale 7], length 0
+    // 00:00:06.084977 IP (tos 0x0, ttl 64, id 48874, offset 0, flags [DF], proto TCP (6), length 60)
+    //    192.168.40.100.42340 > 5.255.255.242.3306: Flags [S], cksum 0xef2c (incorrect -> 0xa0dc), seq 2387075439, win 29200, options [mss 1460,sackOK,TS val 3297337221 ecr 0,nop,wscale 7], length 0
+    // 00:00:01.003010 IP (tos 0x0, ttl 64, id 48875, offset 0, flags [DF], proto TCP (6), length 60)
+    //    192.168.40.100.42340 > 5.255.255.242.3306: Flags [S], cksum 0xef2c (incorrect -> 0x9cf1), seq 2387075439, win 29200, options [mss 1460,sackOK,TS val 3297338224 ecr 0,nop,wscale 7], length 0
+    // 00:00:02.004030 IP (tos 0x0, ttl 64, id 48876, offset 0, flags [DF], proto TCP (6), length 60)
+    //    192.168.40.100.42340 > 5.255.255.242.3306: Flags [S], cksum 0xef2c (incorrect -> 0x951d), seq 2387075439, win 29200, options [mss 1460,sackOK,TS val 3297340228 ecr 0,nop,wscale 7], length 0
+    // 00:00:04.012043 IP (tos 0x0, ttl 64, id 48877, offset 0, flags [DF], proto TCP (6), length 60)
+    //    192.168.40.100.42340 > 5.255.255.242.3306: Flags [S], cksum 0xef2c (incorrect -> 0x8571), seq 2387075439, win 29200, options [mss 1460,sackOK,TS val 3297344240 ecr 0,nop,wscale 7], length 0
+    // 00:00:08.015992 IP (tos 0x0, ttl 64, id 48878, offset 0, flags [DF], proto TCP (6), length 60)
+    //    192.168.40.100.42340 > 5.255.255.242.3306: Flags [S], cksum 0xef2c (incorrect -> 0x6621), seq 2387075439, win 29200, options [mss 1460,sackOK,TS val 3297352256 ecr 0,nop,wscale 7], length 0
+    // 00:00:16.031940 IP (tos 0x0, ttl 64, id 48879, offset 0, flags [DF], proto TCP (6), length 60)
+    //    192.168.40.100.42340 > 5.255.255.242.3306: Flags [S], cksum 0xef2c (incorrect -> 0x2781), seq 2387075439, win 29200, options [mss 1460,sackOK,TS val 3297368288 ecr 0,nop,wscale 7], length 0
+    // 00:00:32.032066 IP (tos 0x0, ttl 64, id 48880, offset 0, flags [DF], proto TCP (6), length 60)
+    //    192.168.40.100.42340 > 5.255.255.242.3306: Flags [S], cksum 0xef2c (incorrect -> 0xaa60), seq 2387075439, win 29200, options [mss 1460,sackOK,TS val 3297400320 ecr 0,nop,wscale 7], length 0
+
+    //Итак, похоже, что мы успешно локализовали проблему и дальше двигаться некуда,
+    //поскольку в подавляющем большинстве случаев у нас нет доступа к настройкам межсетевого экрана,
+    //особенно на промежуточных устройствах между клиентами и серверами.
+    //В нашем конкретном случае ошибка в настройках располагается на сервере бэкенда,
+    //но для их просмотра необходимы права пользователя root.
+
+    //[root@c7-backend ~]# iptables -vnL
+    //Chain INPUT (policy ACCEPT 22467 packets, 4408K bytes)
+    // pkts bytes target     prot opt in     out     source               destination
+    //31745   95M DROP       tcp  --  *      *       192.168.40.14        0.0.0.0/0            tcp dpt:22 statistic mode random probability 0.10000000009
+    // 1067  196K DROP       icmp --  *      *       192.168.40.14        0.0.0.0/0            statistic mode random probability 0.25000000000
+    //
+    //Chain FORWARD (policy ACCEPT 0 packets, 0 bytes)
+    // pkts bytes target     prot opt in     out     source               destination
+    //    0     0 REJECT     all  --  *      *       0.0.0.0/0            0.0.0.0/0            reject-with icmp-host-prohibited
+    //
+    //Chain OUTPUT (policy ACCEPT 27119 packets, 4824K bytes)
+    // pkts bytes target     prot opt in     out     source               destination
+    //28589 1606K DROP       tcp  --  *      *       0.0.0.0/0            192.168.40.14        tcp spt:22 statistic mode random probability 0.10000000009
+    // 1796  110K DROP       tcp  --  *      *       0.0.0.0/0            192.168.40.150            tcp dpt:3306 owner UID match 2000
+
+    //Блокировка происходит из-за последней таблицы OUTPUT (исходящие), в которой отбрасываются (DROP) все пакеты TCP,
+    //идущие на узел 192.168.40.150 и порт 3306 от всех процессов с UID = 2000 (а это идентификатор пользователя st00).
+
+    //Остальные правила из таблиц INPUT (входящие) и OUTPUT с ключевыми словами random probability
+    //были составлены для демонстрации потери пакетов в модуле 14 «Поиск сетевых неисправностей».
+
+
+    //Результаты урока
+
+    //Что мы узнали о методиках локализации дефектов в трёхзвенных веб-приложениях:
+
+    //1
+    //Все подходы к поиску неисправностей, описанные в предыдущем уроке, а именно:
+    //«сверху вниз», «сначала самые простые» и «сначала самые вероятные»,
+    //можно с успехом применять и даже комбинировать при локализации дефектов даже в простых приложениях.
+
+    //2
+    //Документация продукта может существенно помочь в локализации дефектов.
+
+    //3
+    //Некоторые проверки можно применить сразу для нескольких предположений, кардинально сокращая время, требуемое для локализации.
+
+    //4
+    //В процессе исследования могут появляться новые вводные данные, по которым можно придумать новые гипотезы
+    //и отклонять старые, вместе с заранее запланированными шагами по их проверке.
+
+    //5
+    //Для локализации системных и сетевых проблем чрезвычайно полезны инструменты,
+    //изученные ранее в модулях, посвящённых ОС Linux и сетям.
 }
